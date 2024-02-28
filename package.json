@@ -1,0 +1,30 @@
+{
+  "name": "assignment-part1",
+  "version": "1.0.0",
+  "description": "assignment-part1",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codescalper/assignment-part1.git"
+  },
+  "author": "Mayank Singh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/codescalper/assignment-part1/issues"
+  },
+  "homepage": "https://github.com/codescalper/assignment-part1#readme",
+  "dependencies": {
+    "aws-sdk": "^2.1567.0",
+    "axios": "^1.6.7",
+    "express": "^4.18.2",
+    "mongodb": "^6.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
