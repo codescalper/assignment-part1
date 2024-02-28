@@ -7,7 +7,7 @@
 // - Utilize the Alchemy API to fetch NFT data for the given address.
 // - Update NFT metadata including `tokenId`, `title`, `description`, `openseaLink`, `address`,
 // `permaLink`, `chainId`, `ownerAddress`, `creators`, and `ownerId`.
-// 3. mage Upload to S3:
+// 3. Image Upload to S3:
 // - Upon updating NFT information, retrieve the image link from the Alchemy API.
 // - Upload the image to an S3 bucket.
 // - Store the S3 image link (`imageLink`) along with other NFT metadata.
@@ -15,98 +15,111 @@
 // - Ensure the microservice supports updating NFTs across Ethereum, Polygon, Zora, and
 // Optimism networks.
 const express = require('express');
-const axios = require('axios');
 const AWS = require('aws-sdk');
-const MongoClient = require('mongodb').MongoClient;
+require('dotenv').config();``
+const { Alchemy, Network } = require('alchemy-sdk')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const alchemyApiKeys = {
-    ethereum: 'V57bd8iuxrYBPQgmL3Lyca4lU3ObFrCK',
-    arbitrum: 'hJZSNru5E-8XUsVc1EQFyPycmbuBfDZm',
-    polygon: 'dSjs5NoyyV2JChj8LJZVIttkP1RFNULb',
-  };
-
 
 const s3 = new AWS.S3({
-    accessKeyId: 'AKIATCKARGLER2DQXFEB',
-    secretAccessKey: '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',
-    region: 'eu-north-1', 
-  });
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION, 
+});
 
-const mongoUrl = 'mongodb+srv://msfunbook:n6393NiYJtMKVJuS@cluster0.esdby6d.mongodb.net/'
-const dbName = 'nft_db';
 
+
+
+
+
+
+const setting =  {
+  apiKey: process.env.ETHEREUM_MAINNET_API_KEY,
+  network: Network.ETH_MAINNET,
+};
+
+const settings = [
+  {
+    network: Network.ETH_MAINNET,
+    apiKey: process.env.ETHEREUM_MAINNET_API_KEY
+  },
+  {
+    network: Network.OPT_MAINNET,
+    apiKey: process.env.OPTIMISM_MAINNET_API_KEY,
+  },
+  {
+    network: Network.MATIC_MAINNET,
+    apiKey: process.env.POLYGON_MAINNET_API_KEY,
+  }
+];
+
+// const settign
 app.use(express.json());
 
-app.post('/update-nft', async (req, res) => {
-    try {
-      const {  address, network } = req.body;
-  
-     
-      const nftData = await fetchNftData(address,network);
-  
-      await updateNftMetadata(nftData);
-  
-      await uploadImageToS3(nftData.imageLink);
-  
-      res.status(200).json({ message: 'NFT updated successfully' });
-    } catch (error) {
-      console.error('Error updating NFT:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
 
-  app.post('/update-nft', async (req, res) => {
-    try {
-      const { address, network } = req.body;
-  
-      const nftData = await fetchNftData(address, network);
-  
-      await updateNftMetadata(nftData);
-  
-      await uploadImageToS3(nftData.imageLink);
-  
-      res.status(200).json({ message: 'NFT updated successfully' });
-    } catch (error) {
-      console.error('Error updating NFT:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
 
-  app.get('/',(req,res)=>{
-        res.send('Welcome to NFT Microservice')
+  app.get('/getNFTMetadata', async (req, res) => {
+    try {
+      const { contractAddress, tokenId , network  } = req.body;
+      const selectedSetting = settings.find(setting => setting.network === network);
+
+      if (!selectedSetting) {
+          return res.status(400).json({ error: 'Invalid network specified' });
+      }
+
+      // Initialize Alchemy with the selected setting
+      const alchemy = new Alchemy(selectedSetting);
+  
+      const metadata = await alchemy.nft.getNftMetadata(contractAddress, tokenId);
+      const responseObject = {
+        address: metadata.contract.address,
+        name: metadata.contract.name,
+        totalSupply: metadata.contract.totalSupply,
+        symbol: metadata.contract.symbol,
+        tokenType: metadata.contract.tokenType,
+        contractDeployer: metadata.contract.contractDeployer,
+        twitterUsername: metadata.contract.openSeaMetadata.twitterUsername,
+        description: metadata.contract.openSeaMetadata.description,
+        imageUrl: metadata.contract.openSeaMetadata.imageUrl,
+        discordUrl: metadata.contract.openSeaMetadata.discordUrl
+    };
     
-  })
-  
-  async function fetchNftData(address, network) {
-    const alchemyUrl = `https://api.alchemyapi.io/v2/${alchemyApiKeys[network]}/nft/${address}`;
-    const response = await axios.get(alchemyUrl);
-    return response.data;
-  }
+      await uploadMetadataToS3(responseObject);
 
-  async function updateNftMetadata(nftData) {
-    const client = new MongoClient(mongoUrl, { useNewUrlParser: true });
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection('nfts');
-    await collection.updateOne({ tokenId: nftData.tokenId }, { $set: nftData }, { upsert: true });
-    client.close();
-  }
-  
+      res.status(200).json(responseObject);
 
-  async function uploadImageToS3(imageLink) {
-    const imageBuffer = await axios.get(imageLink, { responseType: 'arraybuffer' });
+    } catch (error) {
+      console.error('Error fetching NFT metadata:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+  );
+
+  async function uploadMetadataToS3(metadata) {
+    const metadataString = JSON.stringify(metadata);
     const params = {
       Bucket: 'test-part1',
-      Key: `nft-images/${Date.now()}.jpg`, 
-      Body: imageBuffer.data,
-      ContentType: 'image/jpeg',
+      Key: `nft-metadata/${Date.now()}.txt`, 
+      Body: metadataString,
+      ContentType: 'text/plain',
     };
     await s3.upload(params).promise();
-  }
 
+
+    const imageLinkString = metadata.imageUrl;
+    const imageLinkParams = {
+      Bucket: 'test-part1',
+      Key: `nft-image-links/${Date.now()}.txt`, 
+      Body: imageLinkString,
+      ContentType: 'text/plain',
+    };
+    await s3.upload(imageLinkParams).promise();
+    // Upload image link
+   
+  }
+  
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
