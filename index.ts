@@ -72,6 +72,10 @@ app.get("/getNFTMetadata", async (req: Request, res: Response) => {
   }
 });
 
+app.get("/", (req, res) => {
+  res.send("Assignment part 1");
+});
+
 async function uploadMetadataToS3(metadata: any) {
   const metadataString = JSON.stringify(metadata);
   const params = {
