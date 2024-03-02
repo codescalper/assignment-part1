@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { SparklesCore } from "@/components/ui/sparkles";
 import Description from "@/components/Description";
+import NFTForm from "@/components/Form";
 
 export default function Home() {
   return (
@@ -31,6 +32,7 @@ export default function Home() {
       </div>
     </div>
   <Description />
+  <NFTForm />
     </>
   );
 }
