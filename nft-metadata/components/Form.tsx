@@ -1,3 +1,4 @@
+"use client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -20,6 +21,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import SelectNetwok from "./Select"
+import { useNetwork } from "@/hooks/useNetwork"
 
 const formSchema = z.object({
   contractAddress: z.string().refine(value => value.length === 42, "Must be a valid contract address"),
@@ -28,6 +31,7 @@ const formSchema = z.object({
 });
 
 export default function NFTForm() {
+  const {isNetwork} = useNetwork();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -38,14 +42,20 @@ export default function NFTForm() {
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (isNetwork === "ethereum" || isNetwork === "polygon" || isNetwork === "solana") {
+      values.network = isNetwork;
+    } 
+    
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     console.log(values)
   }
 
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-5xl ">
+    <div className="flex justify-center ">
+    <Form {...form} >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8  max-w-full ">
         <FormField
           control={form.control}
           name="contractAddress"
@@ -75,8 +85,25 @@ export default function NFTForm() {
             </FormItem>
           )}
         />
-        {/* <Button type="submit">Submit</Button> */}
+        <FormField
+          control={form.control}
+          name="network"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Network</FormLabel>
+              <FormControl>
+                <SelectNetwok />
+              </FormControl>
+              <FormDescription>
+                This is your unique token ID.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">Submit</Button>
       </form>
     </Form>
+    </div>
   )
 }
