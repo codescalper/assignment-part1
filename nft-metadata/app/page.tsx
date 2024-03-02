@@ -4,8 +4,8 @@ import { SparklesCore } from "@/components/ui/sparkles";
 export default function Home() {
   return (
     <>
-    <div className="h-[60rem] w-full bg-black flex flex-col items-center justify-center overflow-hidden rounded-md">
-      <h1 className="md:text-7xl text-3xl lg:text-9xl font-bold text-center text-white relative z-20">
+    <div className="h-[20rem] w-full  flex flex-col items-center justify-center overflow-hidden rounded-md">
+      <h1 className="md:text-7xl text-3xl lg:text-9xl font-bold text-center relative z-20">
         Meta Nft
       </h1>
       <div className="w-[40rem] h-40 relative">
@@ -26,7 +26,7 @@ export default function Home() {
         />
  
         {/* Radial Gradient to prevent sharp edges */}
-        <div className="absolute inset-0 w-full h-full bg-black [mask-image:radial-gradient(350px_200px_at_top,transparent_20%,white)]"></div>
+        <div className="absolute inset-0 w-full h-full [mask-image:radial-gradient(350px_200px_at_top,transparent_20%,white)]"></div>
       </div>
     </div>
     </>
